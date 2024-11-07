@@ -1,0 +1,97 @@
+#!/bin/bash
+
+DATABASE_FILE="student_database.txt"
+
+display_menu() {
+    echo -e "\nAddress Book Menu:"
+    echo "a) Create address book"
+    echo "b) View address book"
+    echo "c) Insert a record"
+    echo "d) Delete a record"
+    echo "e) Modify a record"
+    echo "f) Exit"
+    echo -n "Select an option: "
+}
+
+create_address_book() {
+    > "$DATABASE_FILE" # This will create an empty file
+    echo "Address book created."
+}
+
+view_address_book() {
+    if [ ! -s "$DATABASE_FILE" ]; then
+        echo "Address book is empty."
+    else
+        cat "$DATABASE_FILE"
+    fi
+}
+
+insert_record() {
+    echo -n "Enter name: "
+    read name
+    echo -n "Enter address: "
+    read address
+    echo -n "Enter phone number: "
+    read phone
+    echo "$name | $address | $phone" >> "$DATABASE_FILE"
+    echo "Record inserted."
+}
+
+delete_record() {
+    if [ ! -s "$DATABASE_FILE" ]; then
+        echo "Address book is empty."
+        return
+    fi
+
+    view_address_book
+    echo -n "Enter the record number to delete: "
+    read record_number
+
+    if [ "$record_number" -le 0 ] || [ "$record_number" -gt "$(wc -l < "$DATABASE_FILE")" ]; then
+        echo "Invalid record number."
+        return
+    fi
+
+    sed -i "${record_number}d" "$DATABASE_FILE"
+    echo "Record deleted."
+}
+
+modify_record() {
+    if [ ! -s "$DATABASE_FILE" ]; then
+        echo "Address book is empty."
+        return
+    fi
+
+    view_address_book
+    echo -n "Enter the record number to modify: "
+    read record_number
+
+    if [ "$record_number" -le 0 ] || [ "$record_number" -gt "$(wc -l < "$DATABASE_FILE")" ]; then
+        echo "Invalid record number."
+        return
+    fi
+
+    echo -n "Enter new name: "
+    read name
+    echo -n "Enter new address: "
+    read address
+    echo -n "Enter new phone number: "
+    read phone
+
+    sed -i "${record_number}s/.*/$name | $address | $phone/" "$DATABASE_FILE"
+    echo "Record modified."
+}
+
+while true; do
+    display_menu
+    read choice
+    case $choice in
+        a) create_address_book ;;
+        b) view_address_book ;;
+        c) insert_record ;;
+        d) delete_record ;;
+        e) modify_record ;;
+        f) echo "Exiting program."; exit 0 ;;
+        *) echo "Invalid option. Please select again." ;;
+    esac
+done

@@ -1,0 +1,87 @@
+//reader
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+
+#define FIFO1 "/tmp/fifo1"
+#define FIFO2 "/tmp/fifo2"
+#define BUFFER_SIZE 1024
+
+int main() 
+{
+    char input[BUFFER_SIZE];
+    char output[BUFFER_SIZE];
+    int fd1, fd2;
+
+    mkfifo(FIFO1, 0666);
+    mkfifo(FIFO2, 0666);
+
+    printf("Process 1: Enter sentences (type 'exit' to quit):\n");
+
+    while (1) {
+        fgets(input, BUFFER_SIZE, stdin);
+        input[strcspn(input, "\n")] = '\0';
+
+        if (strcmp(input, "exit") == 0) {
+            break;
+        }
+        fd1 = open(FIFO1, O_WRONLY);
+        write(fd1, input, strlen(input) + 1);
+        close(fd1);
+
+        fd2 = open(FIFO2, O_RDONLY);
+        read(fd2, output, BUFFER_SIZE);
+        close(fd2);
+
+        printf("Received from Process 2: %s\n", output);
+    }
+
+    unlink(FIFO1);
+    unlink(FIFO2);
+
+    return 0;
+}
+
+//writer
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define FIFO1 "/tmp/fifo1"
+#define FIFO2 "/tmp/fifo2"
+#define BUFFER_SIZE 1024
+
+void analyzeText(const char *text, char *result) {
+    int characters = 0, words = 1, lines = 1;
+    for (int i = 0; text[i] != '\0'; i++) {
+        characters++;
+        if (text[i] == ' ') words++;
+        if (text[i] == '\n') lines++;
+    }
+
+    sprintf(result, "Characters: %d, Words: %d, Lines: %d", characters, words, lines);
+}
+
+int main() {
+    char input[BUFFER_SIZE];
+    char analysis[BUFFER_SIZE];
+    int fd1, fd2;
+
+    while (1) 
+    {
+        fd1 = open(FIFO1, O_RDONLY);
+        read(fd1, input, BUFFER_SIZE);
+        close(fd1);
+        analyzeText(input, analysis);
+        fd2 = open(FIFO2, O_WRONLY);
+        write(fd2, analysis, strlen(analysis) + 1);
+        close(fd2);
+    }
+
+    return 0;
+}

@@ -1,0 +1,237 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+void FCFS(int requests[], int n, int head)
+{
+    int seek_operations = 0;
+    int distance, current_track;
+
+    for (int i = 0; i < n; i++)
+    {
+        current_track = requests[i];
+        distance = abs(current_track - head);
+        seek_operations += distance;
+        head = current_track;
+    }
+
+    printf("Total seek operations for FCFS: %d\n", seek_operations);
+}
+
+void SSTF(int requests[], int n, int head)
+{
+    int seek_operations = 0;
+    int distance, shortest_distance;
+    int completed[n];
+
+    for (int i = 0; i < n; i++)
+    {
+        completed[i] = 0;
+    }
+    
+    for (int count = 0; count < n; count++)
+    {
+        shortest_distance = 1e6;
+        int index = -1;
+
+        for (int i = 0; i < n; i++)
+        {
+            if (completed[i] == 0)
+            {
+                distance = abs(requests[i] - head);
+                if (distance < shortest_distance)
+                {
+                    shortest_distance = distance;
+                    index = i;
+                }
+            }
+        }
+
+        seek_operations += shortest_distance;
+        head = requests[index];
+        completed[index] = 1;
+    }
+
+    printf("Total seek operations for SSTF: %d\n", seek_operations);
+}
+
+void SCAN(int requests[], int size, int head, int direction, int disk_size)
+{
+    int seek_count = 0;
+    int distance, cur_track;
+    int left[size + 1], right[size + 1];
+    int l = 0, r = 0;
+
+    if (direction == 0)
+    {
+        left[l++] = 0;
+    }
+    else if (direction == 1)
+    {
+        right[r++] = disk_size - 1;
+    }
+
+    for (int i = 0; i < size; i++)
+    {
+        if (requests[i] < head)
+        {
+            left[l++] = requests[i];
+        }
+        if (requests[i] > head)
+        {
+            right[r++] = requests[i];
+        }
+    }
+
+    for (int i = 0; i < l - 1; i++)
+    {
+        for (int j = 0; j < l - i - 1; j++)
+        {
+            if (left[j] > left[j + 1])
+            {
+                int temp = left[j];
+                left[j] = left[j + 1];
+                left[j + 1] = temp;
+            }
+        }
+    }
+    for (int i = 0; i < r - 1; i++)
+    {
+        for (int j = 0; j < r - i - 1; j++)
+        {
+            if (right[j] > right[j + 1])
+            {
+                int temp = right[j];
+                right[j] = right[j + 1];
+                right[j + 1] = temp;
+            }
+        }
+    }
+
+    int run = 2;
+    while (run--)
+    {
+        if (direction == 0)
+        {
+            for (int i = l - 1; i >= 0; i--)
+            {
+                cur_track = left[i];
+                distance = abs(cur_track - head);
+                seek_count += distance;
+                head = cur_track;
+            }
+            direction = 1;
+        }
+        else if (direction == 1)
+        {
+            for (int i = 0; i < r; i++)
+            {
+                cur_track = right[i];
+                distance = abs(cur_track - head);
+                seek_count += distance;
+                head = cur_track;
+            }
+            direction = 0;
+           
+        }
+    }
+
+    printf("Total number of seek operations = %d\n", seek_count);
+}
+
+void CLOOK(int requests[], int n, int head, int disk_size)
+{
+    int seek_operations = 0;
+    int distance;
+    int sorted_requests[n];
+
+    for (int i = 0; i < n; i++)
+    {
+        sorted_requests[i] = requests[i];
+    }
+
+    for (int i = 0; i < n - 1; i++)
+    {
+        for (int j = 0; j < n - i - 1; j++)
+        {
+            if (sorted_requests[j] > sorted_requests[j + 1])
+            {
+                int temp = sorted_requests[j];
+                sorted_requests[j] = sorted_requests[j + 1];
+                sorted_requests[j + 1] = temp;
+            }
+        }
+    }
+
+    int start = 0;
+    while (sorted_requests[start] < head) start++;
+
+    for (int i = start; i < n; i++)
+    {
+        distance = abs(sorted_requests[i] - head);
+        seek_operations += distance;
+        head = sorted_requests[i];
+    }
+
+    for (int i = 0; i < start; i++)
+    {
+        distance = abs(sorted_requests[i] - head);
+        seek_operations += distance;
+        head = sorted_requests[i];
+    }
+
+    printf("Total seek operations for C-LOOK: %d\n", seek_operations);
+}
+
+int main()
+{
+    int n, head, disk_size, choice, direction;
+
+    printf("Enter number of requests: ");
+    scanf("%d", &n);
+
+    int requests[n];
+
+    printf("Enter the request sequence: ");
+    for (int i = 0; i < n; i++)
+    {
+        scanf("%d", &requests[i]);
+    }
+
+    printf("Enter the initial head position: ");
+    scanf("%d", &head);
+
+    printf("Enter the disk size (maximum track number): ");
+    scanf("%d", &disk_size);
+	
+    
+    do
+    {
+        printf("Choose the disk scheduling algorithm:\n");
+        printf("1. FCFS\n2. SSTF\n3. SCAN\n4. C-LOOK\n");
+        scanf("%d", &choice);
+
+        switch (choice)
+        {
+        case 1:
+            FCFS(requests, n, head);
+            break;
+        case 2:
+            SSTF(requests, n, head);
+            break;
+        case 3:
+            printf("Enter the direction (1 for high, 0 for low): ");
+            scanf("%d", &direction);
+            SCAN(requests, n, head, direction, disk_size);
+            break;
+        case 4:
+            CLOOK(requests, n, head, disk_size);
+            break;
+        case 5:
+            exit(0);
+        default:
+            printf("Invalid choice.\n");
+        }
+    } while (choice != 5);
+    
+    return 0;
+}

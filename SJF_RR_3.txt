@@ -1,0 +1,177 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+struct Process 
+{
+    int id, AT, BT, RT, CT;
+    bool done;
+};
+
+void sortByAT(struct Process p[], int n) 
+{
+    for (int i = 0; i < n - 1; i++) 
+    {
+        for (int j = 0; j < n - i - 1; j++) 
+        {
+            if (p[j].AT > p[j + 1].AT) 
+            {
+                struct Process temp = p[j];
+                p[j] = p[j + 1];
+                p[j + 1] = temp;
+            }
+        }
+    }
+}
+
+int findSJF(struct Process p[], int n, int time) 
+{
+    int idx = -1, minBT = 99999;
+    for (int i = 0; i < n; i++) {
+        if (p[i].AT <= time && p[i].RT > 0 && p[i].RT < minBT) {
+            idx = i;
+            minBT = p[i].RT;
+        }
+    }
+    return idx;
+}
+
+void sjfp() 
+{
+    int n;
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+    struct Process p[n];
+
+    for (int i = 0; i < n; i++) 
+    {
+        p[i].id = i + 1;
+        printf("Enter AT and BT for P%d: ", p[i].id);
+        scanf("%d %d", &p[i].AT, &p[i].BT);
+        p[i].RT = p[i].BT;
+    }
+
+    sortByAT(p, n);
+    int time = 0, completed = 0;
+    int TAT[n], WT[n];
+    printf("Gantt Chart:\n");
+
+    while (completed < n) 
+    {
+        int idx = findSJF(p, n, time);
+        if (idx == -1) 
+        {
+            printf("IDLE ");
+            time++;
+        } 
+        else 
+        {
+            printf("P%d ", p[idx].id);
+            p[idx].RT--;
+            time++;
+            if (p[idx].RT == 0) 
+            {
+                p[idx].CT = time;
+                TAT[idx] = p[idx].CT - p[idx].AT;
+                WT[idx] = TAT[idx] - p[idx].BT;
+                completed++;
+            }
+        }
+    }
+    printf("\n");
+
+    int totalTAT = 0, totalWT = 0;
+    printf("\nProcess\tAT\tBT\tCT\tTAT\tWT\n");
+    for (int i = 0; i < n; i++) {
+        totalTAT += TAT[i];
+        totalWT += WT[i];
+        printf("P%d\t%d\t%d\t%d\t%d\t%d\n", p[i].id, p[i].AT, p[i].BT, p[i].CT, TAT[i], WT[i]);
+    }
+    printf("Average TAT: %.2f\n", (double)totalTAT / n);
+    printf("Average WT: %.2f\n", (double)totalWT / n);
+}
+
+void rr() 
+{
+    int n, tq;
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+    printf("Enter time quantum: ");
+    scanf("%d", &tq);
+    
+    struct Process p[n];
+    for (int i = 0; i < n; i++) 
+    {
+        p[i].id = i + 1;
+        printf("Enter AT and BT for P%d: ", p[i].id);
+        scanf("%d %d", &p[i].AT, &p[i].BT);
+        p[i].RT = p[i].BT;
+        p[i].done = false;
+    }
+
+    int time = 0, completed = 0;
+    printf("Gantt Chart:\n");
+
+    while (completed < n) 
+    {
+        int anyExecuted = 0;
+        for (int i = 0; i < n; i++) 
+        {
+            if (!p[i].done && p[i].AT <= time) 
+            {
+                int slice = (p[i].RT > tq) ? tq : p[i].RT;
+                p[i].RT -= slice;
+                time += slice;
+                
+                for (int j = 0; j < slice; j++) {
+                    printf("P%d ", p[i].id);
+                }
+
+                if (p[i].RT == 0) {
+                    p[i].CT = time;
+                    completed++;
+                    p[i].done = true;
+                }
+                anyExecuted = 1;
+            }
+        }
+        if (!anyExecuted) {
+            printf("IDLE ");
+            time++;
+        }
+    }
+    printf("\n");
+
+    int totalTAT = 0, totalWT = 0;
+    int TAT[n], WT[n];
+    printf("\nProcess\tAT\tBT\tCT\tTAT\tWT\n");
+    for (int i = 0; i < n; i++) {
+        TAT[i] = p[i].CT - p[i].AT;
+        WT[i] = TAT[i] - p[i].BT;
+        totalTAT += TAT[i];
+        totalWT += WT[i];
+        printf("P%d\t%d\t%d\t%d\t%d\t%d\n", p[i].id, p[i].AT, p[i].BT, p[i].CT, TAT[i], WT[i]);
+    }
+
+    printf("Average TAT: %.2f\n", (double)totalTAT / n);
+    printf("Average WT: %.2f\n", (double)totalWT / n);
+}
+
+int main() 
+{
+    while (1) 
+    {
+        int choice;
+        printf("\nMenu:\n");
+        printf("1. SJF Preemptive\n");
+        printf("2. Round Robin\n");
+        printf("3. Exit\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+        if (choice == 1) sjfp();
+        else if (choice == 2) rr();
+        else if (choice == 3) break;
+        else printf("Invalid choice\n");
+    }
+    return 0;
+}

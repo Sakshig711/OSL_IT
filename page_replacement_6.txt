@@ -1,0 +1,175 @@
+#include <stdio.h>
+#include <limits.h>
+
+int isPageInFrames(int frames[], int frame_size, int page)
+{
+    for (int i = 0; i < frame_size; i++) 
+    {
+        if (frames[i] == page) 
+            return 1;
+    }
+    return 0;
+}
+
+void FCFS(int pages[], int n, int frames[], int frame_size)
+{
+    int page_faults = 0, page_hits = 0, index = 0;
+    for (int i = 0; i < frame_size; i++) 
+        frames[i] = -1;
+
+    for (int i = 0; i < n; i++) 
+    {
+        if (isPageInFrames(frames, frame_size, pages[i])) 
+        {
+            page_hits++;
+        } 
+        else 
+        {
+            frames[index] = pages[i];
+            index = (index + 1) % frame_size;
+            page_faults++;
+        }
+    }
+    printf("Total Page Faults (FCFS): %d\n", page_faults);
+    printf("Hit Ratio: %.2f\n", (float)page_hits / n);
+    printf("Miss Ratio: %.2f\n\n", (float)page_faults / n);
+}
+
+void LRU(int pages[], int n, int frames[], int frame_size)
+{
+    int page_faults = 0, page_hits = 0;
+    int time[frame_size]; 
+    for (int i = 0; i < frame_size; i++) 
+    {
+        frames[i] = -1;
+        time[i] = -1; 
+    }
+    for (int i = 0; i < n; i++) 
+    {
+        int page = pages[i];
+
+        if (isPageInFrames(frames, frame_size, page)) 
+        {
+            page_hits++;
+            for (int j = 0; j < frame_size; j++) 
+            {
+                if (frames[j] == page) 
+                {
+                    time[j] = i;  
+                    break;
+                }
+            }
+        } 
+        else 
+        {
+            int lru_index = -1, min_time = INT_MAX;
+            for (int j = 0; j < frame_size; j++) 
+            {
+                if (frames[j] == -1) 
+                {
+                    lru_index = j;
+                    break;
+                } 
+                else if (time[j] < min_time) 
+                {
+                    min_time = time[j];
+                    lru_index = j;
+                }
+            }
+            frames[lru_index] = page;
+            time[lru_index] = i; 
+            page_faults++;
+        }
+    }
+
+    printf("Total Page Faults (LRU): %d\n", page_faults);
+    printf("Hit Ratio: %.2f\n", (float)page_hits / n);
+    printf("Miss Ratio: %.2f\n\n", (float)page_faults / n);
+}
+
+void Optimal(int pages[], int n, int frames[], int frame_size)
+{
+    int page_faults = 0, page_hits = 0;
+    for (int i = 0; i < frame_size; i++) 
+        frames[i] = -1;
+
+    for (int i = 0; i < n; i++) 
+    {
+        if (isPageInFrames(frames, frame_size, pages[i])) 
+        {
+            page_hits++;
+        } 
+        else 
+        {
+            int optimal_index = 0, farthest = i;
+            for (int j = 0; j < frame_size; j++) 
+            {
+                if (frames[j] == -1) 
+                {
+                    optimal_index = j;
+                    break;
+                }
+                int k;
+                for (k = i + 1; k < n; k++) 
+                {
+                    if (frames[j] == pages[k]) 
+                        break;
+                }
+                if (k > farthest) 
+                {
+                    farthest = k;
+                    optimal_index = j;
+                }
+            }
+            frames[optimal_index] = pages[i];
+            page_faults++;
+        }
+    }
+
+    printf("Total Page Faults (Optimal): %d\n", page_faults);
+    printf("Hit Ratio: %.2f\n", (float)page_hits / n);
+    printf("Miss Ratio: %.2f\n\n", (float)page_faults / n);
+}
+
+int main()
+{
+    int n, frame_size, choice;
+
+    printf("Enter the number of pages: ");
+    scanf("%d", &n);
+    int pages[n];
+    printf("Enter the page reference string: ");
+    for (int i = 0; i < n; i++) 
+    {
+        scanf("%d", &pages[i]);
+    }
+
+    printf("Enter frame size (minimum 3): ");
+    scanf("%d", &frame_size);
+    if (frame_size < 3) 
+    {
+        printf("Frame size must be at least 3.\n");
+        return 1;
+    }
+    int frames[frame_size];
+
+    printf("Select Page Replacement Algorithm:\n");
+    printf("1. FCFS\n2. LRU\n3. Optimal\nChoice: ");
+    scanf("%d", &choice);
+    switch (choice) 
+    {
+        case 1:
+            FCFS(pages, n, frames, frame_size);
+            break;
+        case 2:
+            LRU(pages, n, frames, frame_size);
+            break;
+        case 3:
+            Optimal(pages, n, frames, frame_size);
+            break;
+        default:
+            printf("Invalid choice!\n");
+            return 1;
+    }
+    return 0;
+}

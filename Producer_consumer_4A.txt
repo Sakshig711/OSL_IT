@@ -1,0 +1,93 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <semaphore.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#define BUFFER_SIZE 5
+sem_t full, empty;
+pthread_mutex_t lock;
+int buffer[BUFFER_SIZE];
+int in = 0, out = 0;
+
+void *producer(void *arg) 
+{
+    int id = *(int *)arg;
+    int item = 1;
+
+    while (1) 
+    {
+        sleep(rand() % 3);
+
+        sem_wait(&empty);
+        pthread_mutex_lock(&lock);
+
+        buffer[in] = item;
+        printf("Producer %d produced item %d\n", id, item);
+        in = (in + 1) % BUFFER_SIZE;
+        item++;
+
+        pthread_mutex_unlock(&lock);
+        sem_post(&full);
+    }
+}
+
+void *consumer(void *arg) 
+{
+    int id = *(int *)arg;
+
+    while (1) 
+    {
+        sleep(rand() % 3);
+
+        sem_wait(&full);
+        pthread_mutex_lock(&lock);
+
+        int item = buffer[out];
+        printf("Consumer %d consumed item %d\n", id, item);
+        out = (out + 1) % BUFFER_SIZE;
+
+        pthread_mutex_unlock(&lock);
+        sem_post(&empty);
+    }
+}
+
+int main() 
+{
+    int num_producers, num_consumers;
+    printf("Enter the number of producers: ");
+    scanf("%d", &num_producers);
+    printf("Enter the number of consumers: ");
+    scanf("%d", &num_consumers);
+    pthread_t producers[num_producers], consumers[num_consumers];
+    int producer_ids[num_producers], consumer_ids[num_consumers];
+    
+    sem_init(&empty, 0, BUFFER_SIZE);
+    sem_init(&full, 0, 0);
+    pthread_mutex_init(&lock, NULL);
+    for (int i = 0; i < num_producers; i++) 
+    {
+        producer_ids[i] = i + 1;
+        pthread_create(&producers[i], NULL, producer, &producer_ids[i]);
+    }
+
+    for (int i = 0; i < num_consumers; i++) 
+    {
+        consumer_ids[i] = i + 1;
+        pthread_create(&consumers[i], NULL, consumer, &consumer_ids[i]);
+    }
+
+    for (int i = 0; i < num_producers; i++) 
+    {
+        pthread_join(producers[i], NULL);
+    }
+    for (int i = 0; i < num_consumers; i++) {
+        pthread_join(consumers[i], NULL);
+    }
+
+    sem_destroy(&empty);
+    sem_destroy(&full);
+    pthread_mutex_destroy(&lock);
+
+    return 0;
+}
